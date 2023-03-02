@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'question.dart';
+import 'quiz_brain.dart';
+
+QuizBrain quizBrain = QuizBrain();
 
 void main() => runApp(Quizzler());
 
@@ -29,21 +33,50 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  List<Widget> scoreKeeper = [];
+
+  void checkAnswer(bool answer, BuildContext context) {
+    if (!quizBrain.checkQuestionDisabled()) {
+      IconData icon = Icons.check;
+      Color color = Colors.green;
+
+      if (!quizBrain.checkAnswer(answer)) {
+        icon = Icons.close;
+        color = Colors.red;
+      }
+
+      setState(() {
+        scoreKeeper.add(Icon(icon, color: color));
+      });
+
+      quizBrain.nextQuestion(context, (bool finished, List<Question> questions, int currentQuestion) {
+        setState(() {
+          for (int i = 0; i < questions.length; i++) {
+            questions[i].enableQuestion();
+          }
+          currentQuestion = 0;
+          scoreKeeper.clear();
+        });
+        Navigator.pop(context);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const Expanded(
+        Expanded(
           flex: 5,
           child: Padding(
-            padding: EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(10.0),
             child: Center(
               child: Text(
-                'This is where the question text will go.',
+                quizBrain.getQuestion(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 25.0,
                   color: Colors.white,
                 ),
@@ -55,7 +88,10 @@ class _QuizPageState extends State<QuizPage> {
           child: Padding(
             padding: const EdgeInsets.all(15.0),
             child: TextButton(
-              style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.green)),
+              style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(
+                !quizBrain.checkQuestionDisabled() ?
+                Colors.green : Colors.grey,
+              )),
               child: const Text(
                 'True',
                 style: TextStyle(
@@ -64,7 +100,7 @@ class _QuizPageState extends State<QuizPage> {
                 ),
               ),
               onPressed: () {
-                //The user picked true.
+                checkAnswer(true, context);
               },
             ),
           ),
@@ -73,7 +109,10 @@ class _QuizPageState extends State<QuizPage> {
           child: Padding(
             padding: const EdgeInsets.all(15.0),
             child: TextButton(
-              style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.red)),
+              style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(
+                !quizBrain.checkQuestionDisabled() ?
+                Colors.red : Colors.grey,
+              )),
               child: const Text(
                 'False',
                 style: TextStyle(
@@ -82,19 +121,15 @@ class _QuizPageState extends State<QuizPage> {
                 ),
               ),
               onPressed: () {
-                //The user picked false.
+                checkAnswer(false, context);
               },
             ),
           ),
         ),
-        //TODO: Add a Row here as your score keeper
+        Row(
+          children: scoreKeeper,
+        )
       ],
     );
   }
 }
-
-/*
-question1: 'You can lead a cow down stairs but not up stairs.', false,
-question2: 'Approximately one quarter of human bones are in the feet.', true,
-question3: 'A slug\'s blood is green.', true,
-*/
